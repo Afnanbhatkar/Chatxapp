@@ -25,7 +25,7 @@ import {
   getDownloadURL,
 } from "firebase/storage";
 
-import {
+import {//jalsdkjflaskdjflasdkjflasdfj
   FiSettings,
   FiArrowLeft,
   FiChevronRight,
@@ -95,7 +95,7 @@ export default function App() {
   const [lightboxLoading, setLightboxLoading] = useState(true);
 
   const messagesEndRef = useRef(null);
-  const messagesContainerRef = useRef(null);
+  const messagesContainerRef = useRef(null);//sdfasdfasdfasdf
   const fileInputRef = useRef(null);
   const profilePicInputRef = useRef(null);
   const [replyingTo, setReplyingTo] = useState(null); // message being replied to
