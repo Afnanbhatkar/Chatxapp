@@ -1,7 +1,0 @@
-jalsdkjfa
-asdfkjaskdjf
-sadfjhaslkdfhd
-asdfasdfasdf
-asdfasdfasdf
-ahsdfh
-adnaisglobal

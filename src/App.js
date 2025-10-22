@@ -25,7 +25,7 @@ import {
   getDownloadURL,
 } from "firebase/storage";
 
-import {//jalsdkjflaskdjflasdkjflasdfj
+import {
   FiSettings,
   FiArrowLeft,
   FiChevronRight,
