@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
 import { initializeApp } from "firebase/app";
+import {  remove } from "firebase/database";
+// Remove or comment out this line
+import { toast, Toaster } from 'react-hot-toast';
+
+
 import {
   getAuth,
   createUserWithEmailAndPassword,
@@ -95,10 +100,12 @@ export default function App() {
   const [lightboxLoading, setLightboxLoading] = useState(true);
 
   const messagesEndRef = useRef(null);
-  const messagesContainerRef = useRef(null);//sdfasdfasdfasdf
+  const messagesContainerRef = useRef(null);
   const fileInputRef = useRef(null);
   const profilePicInputRef = useRef(null);
   const [replyingTo, setReplyingTo] = useState(null); // message being replied to
+  const [showDeletePopupId, setShowDeletePopupId] = useState(null);
+  
 
 
   // Theme state: 'dark' | 'light'
@@ -955,124 +962,223 @@ const deleteMessage = async (msgKey) => {
 <div
   ref={messagesContainerRef}
   className="flex-grow p-1 overflow-y-auto space-y-3"
-  style={{ paddingBottom: "60px" 
-    
-  }}
+  style={{ paddingBottom: "60px" }}
+  onClick={() => setShowDeletePopupId(null)} // hide popup on outside touch
 >
   {messages.map((msg, i) => {
-  const isOwn = msg.senderUid === user.uid;
-  const isMedia = msg.file;
+    const isOwn = msg.senderUid === user.uid;
+    const isMedia = msg.file;
+    let touchStartX = null;
+    let longPressTimeout = null;
 
-  return (
-    <div
-      key={i}
-      className={`flex ${isOwn ? "justify-end" : "justify-start"} px-3 my-1 group relative`}
-    >
+    return (
       <div
-        className={`relative max-w-[80%] sm:max-w-[70%] break-words transition-all`}
-        style={{
-          background:
-            theme === "dark"
-              ? isOwn
-                ? "var(--primary)"
-                : "#374151"
-              : isOwn
-              ? "var(--primary)"
-              : "#E5E7EB",
-          color: theme === "dark" ? "#fff" : "#000",
-          borderRadius: 16,
-          borderTopLeftRadius: isOwn ? 16 : 6,
-          borderTopRightRadius: isOwn ? 6 : 16,
-          borderBottomLeftRadius: 16,
-          borderBottomRightRadius: 16,
-          minHeight: 40,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "flex-end",
-        }}
+        key={i}
+        className={`flex ${isOwn ? "justify-end" : "justify-start"} px-3 my-1`}
       >
-        {/* Replied Message */}
-        {msg.replyTo && (
-          <div
-            className="text-xs px-2 py-1 rounded-t-md mb-1"
-            style={{
-              background: theme === "dark" ? "#4b5563" : "#d1d5db",
-              color: theme === "dark" ? "#e5e7eb" : "#111827",
-            }}
-          >
-            {msg.replyTo.text || "Media"} - {msg.replyTo.senderName}
-          </div>
-        )}
+        <div
+          className={`relative max-w-[80%] sm:max-w-[70%] break-words transition-transform duration-200 ease-out`}
+          style={{
+            background: isOwn
+              ? "var(--primary)"
+              : theme === "dark"
+              ? "#374151"
+              : "#E5E7EB",
+            color: isOwn ? "#fff" : theme === "dark" ? "#fff" : "#000",
+            borderRadius: 16,
+            borderTopLeftRadius: isOwn ? 16 : 6,
+            borderTopRightRadius: isOwn ? 6 : 16,
+            borderBottomLeftRadius: 16,
+            borderBottomRightRadius: 16,
+            padding: "8px",
+            transition: "transform 0.25s ease",
+            userSelect: "none",       // disable text selection
+    WebkitUserSelect: "none", // Safari
+    touchAction: "manipulation" // disable default touch behavior
+          }}
+           onContextMenu={(e) => e.preventDefault()} // ✅ prevent default context menu
+          onTouchStart={(e) => {
+            touchStartX = e.touches[0].clientX;
 
-        {/* Message content */}
-        <div className={`px-3 py-2 ${!isMedia ? "pr-14" : "p-0"} flex flex-col`}>
-          {!isOwn && !isMedia && (
-            <div className="text-xs font-semibold mb-1" style={{ color: theme === "dark" ? "#D1D5DB" : "#111827" }}>
-              {msg.senderName}
-            </div>
-          )}
-
-          {msg.text && (
-            <div className="text-sm leading-snug whitespace-pre-wrap mb-1">{msg.text}</div>
-          )}
-
-          {msg.file && (
-            <div className="relative mt-1">
-              {msg.fileType === "image" ? (
-                <img
-                  src={msg.file}
-                  alt="sent"
-                  className="rounded-lg max-w-full cursor-pointer"
-                  onClick={() => {
-                    setLightboxMedia(msg.file);
-                    setLightboxType("image");
-                    setLightboxLoading(true);
-                  }}
-                />
-              ) : (
-                <video controls className="rounded-lg max-w-full">
-                  <source src={msg.file} type={msg.fileType} />
-                </video>
-              )}
-
-              {/* Time overlay for media */}
-              <div className="absolute bottom-1 right-1 text-[10px] select-none px-1 py-[1px] rounded bg-black/40 text-white">
-                {msg.time}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Time for text only */}
-        {!isMedia && (
-          <div className="absolute text-[8.8px] bottom-1 right-2 select-none" style={{ color: theme === "dark" ? "rgba(255,255,255,0.8)" : "rgba(0,0,0,0.7)" }}>
-            {msg.time}
-          </div>
-        )}
-
-        {/* Tail */}
-        {!isMedia && (
-          <div
-            className="absolute bottom-0"
-            style={
-              isOwn
-                ? { right: "-2px", width: 10, height: 0, borderTop: "8px solid transparent", borderLeft: `8px solid var(--primary)`, transform: "translateY(-2px)" }
-                : { left: "-2px", width: 10, height: 0, borderTop: "8px solid transparent", borderRight: `8px solid ${theme === "dark" ? "#374151" : "#E5E7EB"}`, transform: "translateY(-2px)" }
+            // Long press for delete
+            if (isOwn) {
+              longPressTimeout = setTimeout(() => {
+                setShowDeletePopupId(msg.time);
+              }, 600); // 600ms long press
             }
-          />
-        )}
+          }}
+          onTouchMove={(e) => {
+            if (!touchStartX) return;
+            const diff = e.touches[0].clientX - touchStartX;
 
-        {/* Reply & Delete Buttons */}
-        <div className="absolute top-0 right-0 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button className="text-xs px-1 rounded bg-gray-400 text-white" onClick={() => setReplyingTo(msg)}>Reply</button>
-          {isOwn && !msg.deleted && (
-            <button className="text-xs px-1 rounded bg-red-500 text-white" onClick={() => deleteMessage(Object.keys(messages)[i])}>Delete</button>
+            // Allow swipe only in specific direction
+            if ((isOwn && diff < 0 && Math.abs(diff) < 100) || (!isOwn && diff > 0 && diff < 100)) {
+              e.currentTarget.style.transform = `translateX(${diff}px)`;
+            }
+
+            // cancel long press if swiping
+            if (longPressTimeout) {
+              clearTimeout(longPressTimeout);
+            }
+          }}
+          onTouchEnd={(e) => {
+            if (!touchStartX) return;
+            const diff = e.changedTouches[0].clientX - touchStartX;
+
+            // Trigger reply if swipe threshold passed
+            if ((!isOwn && diff > 60) || (isOwn && diff < -60)) {
+              setReplyingTo(msg);
+              setTimeout(() => {
+                document.querySelector("#messageInput")?.focus();
+              }, 100);
+            }
+
+            // Reset swipe
+            e.currentTarget.style.transform = "translateX(0)";
+            touchStartX = null;
+
+            if (longPressTimeout) clearTimeout(longPressTimeout);
+          }}
+        >
+          {/* Replied Info (Instagram style) */}
+          {msg.replyTo && (
+            <div
+              className="px-2 py-1 mb-1 rounded-md text-xs break-words"
+              style={{
+                background: isOwn
+                  ? "rgba(255,255,255,0.2)"
+                  : theme === "dark"
+                  ? "#4b5563"
+                  : "#d1d5db",
+                color: isOwn ? "#fff" : theme === "dark" ? "#e5e7eb" : "#111827",
+                borderLeft: `3px solid ${isOwn ? "#fff" : "var(--primary)"}`
+              }}
+            >
+              {isOwn
+                ? `You replied : ${msg.replyTo.text || "Media"}`
+                : `${msg.replyTo.senderName} replied to you: ${msg.replyTo.text || "Media"}`}
+            </div>
           )}
+
+          {/* Message content */}
+          <div className={`px-3 py-0.5 ${!isMedia ? "pr-14" : "p-0"} flex flex-col`}>
+            {!isOwn && !isMedia && (
+              <div className="text-xs font-semibold mb-1" style={{ color: theme === "dark" ? "#D1D5DB" : "#111827" }}>
+                {msg.senderName}
+              </div>
+            )}
+            {msg.text && (
+              <div className="text-sm leading-snug whitespace-pre-wrap mb-1">{msg.text}</div>
+            )}
+            {msg.file && (
+              <div className="relative mt-1">
+                {msg.fileType === "image" ? (
+                  <img
+                    src={msg.file}
+                    alt="sent"
+                    className="rounded-lg max-w-full cursor-pointer"
+                    onClick={() => {
+                      setLightboxMedia(msg.file);
+                      setLightboxType("image");
+                      setLightboxLoading(true);
+                    }}
+                  />
+                ) : (
+                  <video controls className="rounded-lg max-w-full">
+                    <source src={msg.file} type={msg.fileType} />
+                  </video>
+                )}
+                <div className="absolute bottom-1 right-1 text-[10px] select-none px-1 py-[1px] rounded bg-black/40 text-white">
+                  {msg.time}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Time for text only */}
+          {!isMedia && (
+            <div className="absolute text-[8.8px] bottom-1 right-2 select-none" style={{ color: theme === "dark" ? "rgba(255,255,255,0.8)" : "rgba(0,0,0,0.7)" }}>
+              {msg.time}
+            </div>
+          )}
+
+          {/* Tail */}
+          {!isMedia && (
+            <div
+              className="absolute bottom-0"
+              style={
+                isOwn
+                  ? { right: "-2px", width: 10, height: 0, borderTop: "8px solid transparent", borderLeft: `8px solid var(--primary)`, transform: "translateY(-2px)" }
+                  : { left: "-2px", width: 10, height: 0, borderTop: "8px solid transparent", borderRight: `8px solid ${theme === "dark" ? "#374151" : "#E5E7EB"}`, transform: "translateY(-2px)" }
+              }
+            />
+          )}
+
+       {/* Delete & Copy Popup (Instagram-style) */}
+{showDeletePopupId === msg.time && (
+  <div
+    className="absolute z-50 w-[160px] bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl shadow-lg px-1 py-1"
+    style={{
+      top: "-60px", // position above the message
+      left: "50%",
+      transform: "translateX(-50%)",
+    }}
+  >
+    {/* Arrow pointing to message */}
+    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3 h-3 bg-white dark:bg-gray-800 rotate-45 border-l dark:border-l-gray-700 border-t dark:border-t-gray-700"></div>
+
+    {/* Copy Button */}
+    <button
+      onClick={() => {
+        navigator.clipboard.writeText(msg.text || "");
+        setShowDeletePopupId(null);
+        toast.success("Message copied!");
+      }}
+      className="flex items-center w-full px-3 py-2 mb-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-sm text-gray-800 dark:text-gray-200 transition duration-150"
+    >
+      <span className="mr-2">📋</span> Copy
+    </button>
+
+    {/* Delete Button */}
+    {isOwn && (
+      <button
+        onClick={async () => {
+          try {
+            const chatId = [user.uid, selectedUser.uid].sort().join("_");
+            const chatRef = ref(db, `privateChats/${chatId}`);
+            const snap = await get(chatRef);
+            const data = snap.val();
+            if (!data) return;
+
+            const key = Object.keys(data).find(
+              (k) => data[k].senderUid === user.uid && data[k].time === msg.time
+            );
+
+            if (key) {
+              await remove(ref(db, `privateChats/${chatId}/${key}`));
+              setMessages((prev) => prev.filter((m) => m.time !== msg.time));
+              toast.success("Message deleted!");
+            }
+          } catch (error) {
+            console.error("Failed to delete message:", error);
+            toast.error("Failed to delete message!");
+          } finally {
+            setShowDeletePopupId(null);
+          }
+        }}
+        className="flex items-center w-full px-3 py-2 hover:bg-red-100 dark:hover:bg-red-900 rounded-xl text-sm text-red-500 dark:text-red-400 transition duration-150"
+      >
+        <span className="mr-2">🗑️</span> Delete
+      </button>
+    )}
+  </div>
+)}
+
+
         </div>
       </div>
-    </div>
-  );
-})}
+    );
+  })}
 
 
   <div ref={messagesEndRef}>
@@ -1102,15 +1208,28 @@ const deleteMessage = async (msgKey) => {
             <div ref={messagesEndRef}></div>
           </div>
           {replyingTo && (
-  <div className="flex justify-between items-center px-3 py-1 mb-1 bg-gray-600 rounded-xl text-white">
-    <div className="text-xs">
-      Replying to {replyingTo.senderName}: {replyingTo.text || "Media"}
+  <div className="flex justify-between items-center px-3 py-2 mb-1 rounded-md bg-gray-900 text-white sticky bottom-[52px] shadow-md border-t-2 border-gray-800">
+    <div className="text-xs truncate max-w-[80%] whitespace-pre-wrap">
+      {replyingTo.senderUid === user.uid ? (
+    <>
+      Replying to yourself{"\n"}
+      {replyingTo.text || "Media"}
+    </>
+  ) : (
+    <>
+      Replying to {replyingTo.senderName} {"\n"}
+      {replyingTo.text || "Media"}
+    </>
+  )}
     </div>
     <button onClick={() => setReplyingTo(null)} className="text-xs font-bold px-1">
       ✕
     </button>
   </div>
 )}
+
+
+
 
 
           {/* Message Input */}
@@ -1130,6 +1249,7 @@ style={{ background: "transparent", color: "var(--muted)" }}
 
     {/* Text Input */}
 <input
+ id="messageInput"
   type="text"
   className="p-2.5 pl-5 pr-16 rounded-full outline-none w-full transition-all duration-300"
   placeholder="Message"
