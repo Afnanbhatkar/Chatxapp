@@ -3,7 +3,7 @@ import ReactDOM from "react-dom";
 import { initializeApp } from "firebase/app";
 import {  remove } from "firebase/database";
 // Remove or comment out this line
-import { toast, Toaster } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 
 
 import {
@@ -105,7 +105,8 @@ export default function App() {
   const profilePicInputRef = useRef(null);
   const [replyingTo, setReplyingTo] = useState(null); // message being replied to
   const [showDeletePopupId, setShowDeletePopupId] = useState(null);
-  
+  const appRef = useRef(null);
+
 
 
   // Theme state: 'dark' | 'light'
@@ -961,9 +962,10 @@ const deleteMessage = async (msgKey) => {
           {/* Messages Container */}
 <div
   ref={messagesContainerRef}
-  className="flex-grow p-1 overflow-y-auto space-y-3"
+  className="flex-grow p-1 overflow-y-auto space-y-3 "
   style={{ paddingBottom: "60px" }}
   onClick={() => setShowDeletePopupId(null)} // hide popup on outside touch
+  
 >
   {messages.map((msg, i) => {
     const isOwn = msg.senderUid === user.uid;
@@ -973,92 +975,124 @@ const deleteMessage = async (msgKey) => {
 
     return (
       <div
-        key={i}
-        className={`flex ${isOwn ? "justify-end" : "justify-start"} px-3 my-1`}
+  key={i}
+  className={`flex ${isOwn ? "justify-end" : "justify-start"} px-3 my-1`}
+>
+  <div
+    className={`relative group max-w-[80%] sm:max-w-[70%] break-words transition-transform duration-200 ease-out`}
+    style={{
+      background: isOwn
+        ? "var(--primary)"
+        : theme === "dark"
+        ? "#374151"
+        : "#E5E7EB",
+      color: isOwn ? "#fff" : theme === "dark" ? "#fff" : "#000",
+      borderRadius: 16,
+      borderTopLeftRadius: isOwn ? 16 : 6,
+      borderTopRightRadius: isOwn ? 6 : 16,
+      borderBottomLeftRadius: 16,
+      borderBottomRightRadius: 16,
+      padding: "8px",
+      transition: "transform 0.25s ease",
+      userSelect: "none",
+      WebkitUserSelect: "none",
+      touchAction: "manipulation",
+      position: "relative",
+    }}
+    onContextMenu={(e) => {
+    e.preventDefault();        // prevent default browser menu
+    e.stopPropagation();       // stop bubbling
+    if (isOwn || !isMedia) {
+      setShowDeletePopupId(msg.time); // show popup for this message only
+    }
+  }}
+
+    
+    onTouchStart={(e) => {
+      touchStartX = e.touches[0].clientX;
+
+      // Long press for delete
+      if (isOwn) {
+        longPressTimeout = setTimeout(() => {
+          setShowDeletePopupId(msg.time);
+        }, 600);
+      }
+    }}
+    onTouchMove={(e) => {
+      if (!touchStartX) return;
+      const diff = e.touches[0].clientX - touchStartX;
+
+      if (
+        (isOwn && diff < 0 && Math.abs(diff) < 100) ||
+        (!isOwn && diff > 0 && diff < 100)
+      ) {
+        e.currentTarget.style.transform = `translateX(${diff}px)`;
+      }
+
+      if (longPressTimeout) clearTimeout(longPressTimeout);
+    }}
+    onTouchEnd={(e) => {
+      if (!touchStartX) return;
+      const diff = e.changedTouches[0].clientX - touchStartX;
+
+      // Mobile swipe reply
+      if ((!isOwn && diff > 60) || (isOwn && diff < -60)) {
+        setReplyingTo(msg);
+        setTimeout(() => {
+          document.querySelector("#messageInput")?.focus();
+        }, 100);
+      }
+
+      e.currentTarget.style.transform = "translateX(0)";
+      touchStartX = null;
+
+      if (longPressTimeout) clearTimeout(longPressTimeout);
+    }}
+  >
+    {/* 📨 Reply icon for PC — appears on hover */}
+    <div
+      className={`absolute ${
+        isOwn ? "-left-7" : "-right-7"
+      } top-1/2 -translate-y-1/2 hidden sm:flex opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer`}
+      onClick={(e) => {
+        e.stopPropagation();
+        setReplyingTo(msg);
+        setTimeout(() => {
+          document.querySelector("#messageInput")?.focus();
+        }, 100);
+      }}
+      title="Reply"
+    >
+      <span className="text-gray-500 hover:text-blue-500 text-lg">↪</span>
+    </div>
+
+    {/* Replied Info (Instagram style) */}
+    {msg.replyTo && (
+      <div
+        className="px-2 py-1 mb-1 rounded-md text-xs break-words"
+        style={{
+          background: isOwn
+            ? "rgba(255,255,255,0.2)"
+            : theme === "dark"
+            ? "#4b5563"
+            : "#d1d5db",
+          color: isOwn
+            ? "#fff"
+            : theme === "dark"
+            ? "#e5e7eb"
+            : "#111827",
+          borderLeft: `3px solid ${
+            isOwn ? "#fff" : "var(--primary)"
+          }`,
+        }}
       >
-        <div
-          className={`relative max-w-[80%] sm:max-w-[70%] break-words transition-transform duration-200 ease-out`}
-          style={{
-            background: isOwn
-              ? "var(--primary)"
-              : theme === "dark"
-              ? "#374151"
-              : "#E5E7EB",
-            color: isOwn ? "#fff" : theme === "dark" ? "#fff" : "#000",
-            borderRadius: 16,
-            borderTopLeftRadius: isOwn ? 16 : 6,
-            borderTopRightRadius: isOwn ? 6 : 16,
-            borderBottomLeftRadius: 16,
-            borderBottomRightRadius: 16,
-            padding: "8px",
-            transition: "transform 0.25s ease",
-            userSelect: "none",       // disable text selection
-    WebkitUserSelect: "none", // Safari
-    touchAction: "manipulation" // disable default touch behavior
-          }}
-           onContextMenu={(e) => e.preventDefault()} // ✅ prevent default context menu
-          onTouchStart={(e) => {
-            touchStartX = e.touches[0].clientX;
-
-            // Long press for delete
-            if (isOwn) {
-              longPressTimeout = setTimeout(() => {
-                setShowDeletePopupId(msg.time);
-              }, 600); // 600ms long press
-            }
-          }}
-          onTouchMove={(e) => {
-            if (!touchStartX) return;
-            const diff = e.touches[0].clientX - touchStartX;
-
-            // Allow swipe only in specific direction
-            if ((isOwn && diff < 0 && Math.abs(diff) < 100) || (!isOwn && diff > 0 && diff < 100)) {
-              e.currentTarget.style.transform = `translateX(${diff}px)`;
-            }
-
-            // cancel long press if swiping
-            if (longPressTimeout) {
-              clearTimeout(longPressTimeout);
-            }
-          }}
-          onTouchEnd={(e) => {
-            if (!touchStartX) return;
-            const diff = e.changedTouches[0].clientX - touchStartX;
-
-            // Trigger reply if swipe threshold passed
-            if ((!isOwn && diff > 60) || (isOwn && diff < -60)) {
-              setReplyingTo(msg);
-              setTimeout(() => {
-                document.querySelector("#messageInput")?.focus();
-              }, 100);
-            }
-
-            // Reset swipe
-            e.currentTarget.style.transform = "translateX(0)";
-            touchStartX = null;
-
-            if (longPressTimeout) clearTimeout(longPressTimeout);
-          }}
-        >
-          {/* Replied Info (Instagram style) */}
-          {msg.replyTo && (
-            <div
-              className="px-2 py-1 mb-1 rounded-md text-xs break-words"
-              style={{
-                background: isOwn
-                  ? "rgba(255,255,255,0.2)"
-                  : theme === "dark"
-                  ? "#4b5563"
-                  : "#d1d5db",
-                color: isOwn ? "#fff" : theme === "dark" ? "#e5e7eb" : "#111827",
-                borderLeft: `3px solid ${isOwn ? "#fff" : "var(--primary)"}`
-              }}
-            >
-              {isOwn
-                ? `You replied : ${msg.replyTo.text || "Media"}`
-                : `${msg.replyTo.senderName} replied to you: ${msg.replyTo.text || "Media"}`}
-            </div>
-          )}
+        {isOwn
+          ? `You replied : ${msg.replyTo.text || "Media"}`
+          : `${msg.replyTo.senderName} replied : ${
+              msg.replyTo.text || "Media"
+            }`}
+      </div>
+    )}
 
           {/* Message content */}
           <div className={`px-3 py-0.5 ${!isMedia ? "pr-14" : "p-0"} flex flex-col`}>
@@ -1113,28 +1147,62 @@ const deleteMessage = async (msgKey) => {
               }
             />
           )}
-
-       {/* Delete & Copy Popup (Instagram-style) */}
+{/* Delete & Copy Popup (Instagram-style, Light & Dark Mode) */}
 {showDeletePopupId === msg.time && (
   <div
-    className="absolute z-50 w-[160px] bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl shadow-lg px-1 py-1"
+    className={`absolute z-50 w-[160px] rounded-2xl shadow-lg px-1 py-1 select-none 
+      ${theme === "dark" 
+        ? "bg-gray-800 border border-gray-700" 
+        : "bg-white border border-gray-300"}`}
     style={{
-      top: "-60px", // position above the message
+      top: "-65px",
       left: "50%",
       transform: "translateX(-50%)",
     }}
+    onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
   >
-    {/* Arrow pointing to message */}
-    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3 h-3 bg-white dark:bg-gray-800 rotate-45 border-l dark:border-l-gray-700 border-t dark:border-t-gray-700"></div>
+    {/* Arrow pointer */}
+    <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45
+      ${theme === "dark"
+        ? "bg-gray-800 border-l border-t border-gray-700"
+        : "bg-white border-l border-t border-gray-300"
+      }`}
+    ></div>
 
     {/* Copy Button */}
     <button
       onClick={() => {
-        navigator.clipboard.writeText(msg.text || "");
-        setShowDeletePopupId(null);
-        toast.success("Message copied!");
+        const textToCopy = msg.text || "";
+        if (!textToCopy) return;
+
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(textToCopy).then(() => {
+            toast.success("Message copied!");
+            setShowDeletePopupId(null);
+          });
+        } else {
+          const textArea = document.createElement("textarea");
+          textArea.value = textToCopy;
+          textArea.style.position = "fixed";
+          textArea.style.top = "-9999px";
+          textArea.style.left = "-9999px";
+          document.body.appendChild(textArea);
+          textArea.select();
+          try {
+            document.execCommand("copy");
+            toast.success("Message copied!");
+          } catch {
+            toast.error("Failed to copy message");
+          }
+          document.body.removeChild(textArea);
+          setShowDeletePopupId(null);
+        }
       }}
-      className="flex items-center w-full px-3 py-2 mb-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-sm text-gray-800 dark:text-gray-200 transition duration-150"
+      className={`flex items-center w-full px-3 py-2 mb-1 rounded-xl text-sm transition duration-150
+        ${theme === "dark"
+          ? "text-gray-200 hover:bg-gray-700"
+          : "text-gray-800 hover:bg-gray-100"
+        }`}
     >
       <span className="mr-2">📋</span> Copy
     </button>
@@ -1157,22 +1225,25 @@ const deleteMessage = async (msgKey) => {
             if (key) {
               await remove(ref(db, `privateChats/${chatId}/${key}`));
               setMessages((prev) => prev.filter((m) => m.time !== msg.time));
-              toast.success("Message deleted!");
             }
           } catch (error) {
             console.error("Failed to delete message:", error);
-            toast.error("Failed to delete message!");
           } finally {
             setShowDeletePopupId(null);
           }
         }}
-        className="flex items-center w-full px-3 py-2 hover:bg-red-100 dark:hover:bg-red-900 rounded-xl text-sm text-red-500 dark:text-red-400 transition duration-150"
+        className={`flex items-center w-full px-3 py-2 rounded-xl text-sm transition duration-150
+          ${theme === "dark"
+            ? "text-red-400 hover:bg-gray-700"
+            : "text-red-500 hover:bg-red-100"
+          }`}
       >
         <span className="mr-2">🗑️</span> Delete
       </button>
     )}
   </div>
 )}
+
 
 
         </div>
