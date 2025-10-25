@@ -46,7 +46,7 @@ import {
 import "./App.css";
 import ReelsPage from "./ReelsPage";
 
-// Firebase config (unchanged)
+// Firebase config (unchanged
 const firebaseConfig = {
   apiKey: "AIzaSyBwaJj3l9t-eJw2naNJHw0_ZSqkbGZPMug",
   authDomain: "chat-app-fa970.firebaseapp.com",
