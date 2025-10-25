@@ -7,3 +7,4 @@ const vision = () => {
 }
 
 export default vision
+import React from 'react';
