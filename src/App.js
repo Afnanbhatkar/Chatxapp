@@ -892,7 +892,7 @@ if (!user) {
                 >
                   {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 </button>
-              ))}
+              ))} 
             </div>
 
             <div
@@ -914,7 +914,7 @@ if (!user) {
                 {[
                   { images: ANIMATED_IMAGES, key: "animated" },
                   { images: ANIME_IMAGES, key: "anime" },
-                  { images: CARTOON_IMAGES, key: "cartoon" },
+                  { images: CARTOON_IMAGES, key: "cartoon"},
                 ].map(({ images, key }) => (
                   <div key={key} className="w-full grid grid-cols-3 gap-3 px-2">
                     {images.map((img, i) => (
@@ -952,7 +952,7 @@ if (!user) {
               color: "var(--text)",
             }}
           >
-            <span>💬 Hookapp</span>
+            <span>💬 Reactify</span>
             <button
               onClick={openSettings}
               className="p-2 rounded-full hover:bg-gray-700 transition-all group"
@@ -1947,7 +1947,7 @@ if (!user) {
                     className={`flex items-center w-full px-3 py-2 mb-1 rounded-xl text-sm transition duration-150
                       ${theme === "dark" ? "text-gray-200 hover:bg-gray-700" : "text-gray-800 hover:bg-gray-100"}`}
                   >
-                    <span className="mr-2">Copy</span> Copy
+                    <span className="mr-2">Copy</span>
                   </button>
 
                   {isOwn && (
@@ -1976,7 +1976,7 @@ if (!user) {
                       className={`flex items-center w-full px-3 py-2 rounded-xl text-sm transition duration-150
                         ${theme === "dark" ? "text-red-400 hover:bg-gray-700" : "text-red-500 hover:bg-red-100"}`}
                     >
-                      <span className="mr-2">Delete</span> Delete
+                      <span className="mr-2">Delete</span>
                     </button>
                   )}
                 </div>
@@ -2033,26 +2033,48 @@ if (!user) {
     </div>
 
     {/* REPLYING TO */}
-    {replyingTo && (
-      <div className="flex justify-between items-center px-3 py-2 mb-1 rounded-md bg-gray-900 text-white sticky bottom-[52px] shadow-md border-t-2 border-gray-800">
-        <div className="text-xs truncate max-w-[80%] whitespace-pre-wrap">
-          {replyingTo.senderUid === user.uid ? (
-            <>
-              Replying to yourself<br />
-              {replyingTo.text || "Media"}
-            </>
-          ) : (
-            <>
-              Replying to {replyingTo.senderName}<br />
-              {replyingTo.text || "Media"}
-            </>
-          )}
-        </div>
-        <button onClick={() => setReplyingTo(null)} className="text-xs font-bold px-1">
-          X
-        </button>
-      </div>
-    )}
+{replyingTo && (
+  <div
+    className={`
+      flex justify-between items-center px-3 py-2 mb-1 rounded-md
+      sticky bottom-[52px]  z-10
+      ${theme === "dark" ? "bg-gray-900 text-white border-gray-800" : "bg-gray-100 text-gray-900 border-gray-300"}
+    `}
+    style={{
+      background: theme === "light" ? "var(--card-bg)" : undefined,
+      borderTopColor: theme === "light" ? "#e5e7eb" : undefined,
+    }}
+  >
+    <div className="text-xs truncate max-w-[80%] whitespace-pre-wrap">
+      {replyingTo.senderUid === user.uid ? (
+        <>
+          Replying to yourself<br />
+          <span className="opacity-70">{replyingTo.text || "Media"}</span>
+        </>
+      ) : (
+        <>
+          Replying to <span className="font-medium">{replyingTo.senderName}</span>
+          <br />
+          <span className="opacity-70">{replyingTo.text || "Media"}</span>
+        </>
+      )}
+    </div>
+    <button
+      onClick={() => setReplyingTo(null)}
+      className={`
+        p-1 rounded-full transition-colors
+        ${theme === "dark" 
+          ? "hover:bg-gray-700 text-gray-300" 
+          : "hover:bg-gray-200 text-gray-600"
+        }
+      `}
+    >
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  </div>
+)}
 
     {/* INPUT BAR */}
     <div className="sticky bottom-0 bg-gray-800 flex items-center p-2 transition-all duration-300" style={{ background: "transparent", color: "var(--muted)" }}>
@@ -2111,7 +2133,7 @@ if (!user) {
             className="absolute right-2 rounded-full p-2 animate-slideIn"
             style={{ background: "var(--primary)", color: "#fff" }}
           >
-            <svg className="w-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.5 19.5l15-7.5-15-7.5v5.25l9 2.25-9 2.25v5.25z" />
             </svg>
           </button>
